@@ -1942,7 +1942,7 @@ public class MyMvcConfig extends WebMvcConfigurerAdapter {
 
 ### 2）、国际化
 
-**1）、编写国际化配置文件；**
+1）、编写国际化配置文件；
 
 2）、使用ResourceBundleMessageSource管理国际化资源文件
 
@@ -1961,34 +1961,42 @@ public class MyMvcConfig extends WebMvcConfigurerAdapter {
 2）、SpringBoot自动配置好了管理国际化资源文件的组件；
 
 ```java
-@ConfigurationProperties(prefix = "spring.messages")
-public class MessageSourceAutoConfiguration {
-    
-    /**
+	@Bean
+	@ConfigurationProperties(prefix = "spring.messages")
+	public MessageSourceProperties messageSourceProperties() {
+		return new MessageSourceProperties();
+	}
+	@Bean
+	public MessageSource messageSource(MessageSourceProperties properties) {
+		ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();
+		if (StringUtils.hasText(properties.getBasename())) {
+	//设置国际化资源文件的基础名（去掉语言国家代码的）		messageSource.setBasenames(StringUtils.commaDelimitedListToStringArray(
+					StringUtils.trimAllWhitespace(properties.getBasename())));
+		}
+		if (properties.getEncoding() != null) {
+			messageSource.setDefaultEncoding(properties.getEncoding().name());
+		}
+		messageSource.setFallbackToSystemLocale(properties.isFallbackToSystemLocale());
+		Duration cacheDuration = properties.getCacheDuration();
+		if (cacheDuration != null) {
+			messageSource.setCacheMillis(cacheDuration.toMillis());
+		}
+		messageSource.setAlwaysUseMessageFormat(properties.isAlwaysUseMessageFormat());
+		messageSource.setUseCodeAsDefaultMessage(properties.isUseCodeAsDefaultMessage());
+		return messageSource;
+	}
+--------------------------------------------------------------------------
+public class MessageSourceProperties {
+
+	/**
 	 * Comma-separated list of basenames (essentially a fully-qualified classpath
 	 * location), each following the ResourceBundle convention with relaxed support for
 	 * slash based locations. If it doesn't contain a package qualifier (such as
 	 * "org.mypackage"), it will be resolved from the classpath root.
 	 */
-	private String basename = "messages";  
-    //我们的配置文件可以直接放在类路径下叫messages.properties；
-    
-    @Bean
-	public MessageSource messageSource() {
-		ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();
-		if (StringUtils.hasText(this.basename)) {
-            //设置国际化资源文件的基础名（去掉语言国家代码的）
-			messageSource.setBasenames(StringUtils.commaDelimitedListToStringArray(
-					StringUtils.trimAllWhitespace(this.basename)));
-		}
-		if (this.encoding != null) {
-			messageSource.setDefaultEncoding(this.encoding.name());
-		}
-		messageSource.setFallbackToSystemLocale(this.fallbackToSystemLocale);
-		messageSource.setCacheSeconds(this.cacheSeconds);
-		messageSource.setAlwaysUseMessageFormat(this.alwaysUseMessageFormat);
-		return messageSource;
-	}
+	private String basename = "messages";
+	  //我们的配置文件可以直接放在类路径下叫messages.properties； 
+   
 ```
 
 
@@ -2087,12 +2095,16 @@ public class MyLocaleResolver implements LocaleResolver {
     }
 }
 
-
- @Bean
+-------------------------------------------------------------------
+ MyConfig添加：
+    @Bean
     public LocaleResolver localeResolver(){
         return new MyLocaleResolver();
     }
 }
+
+-------------------------
+spring.messages.basename=i18n.login
 
 
 ```
@@ -2108,9 +2120,7 @@ public class MyLocaleResolver implements LocaleResolver {
 spring.thymeleaf.cache=false 
 ```
 
-2）、页面修改完成以后ctrl+f9：重新编译；
-
-
+2）、页面修改完成以后ctrl+f9：重新编译；（IDEA中）
 
 登陆错误消息的显示
 
@@ -2181,8 +2191,8 @@ public class LoginHandlerInterceptor implements HandlerInterceptor {
                 //super.addInterceptors(registry);
                 //静态资源；  *.css , *.js
                 //SpringBoot已经做好了静态资源映射
-                registry.addInterceptor(new LoginHandlerInterceptor()).addPathPatterns("/**")
-                        .excludePathPatterns("/index.html","/","/user/login");
+               registry.addInterceptor(new LoginHandlerInterceptor()).addPathPatterns("/**")
+        .excludePathPatterns("/index.html","/","/user/login","/webjars/**","/asserts/**");
             }
         };
         return adapter;
