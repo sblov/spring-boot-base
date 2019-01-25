@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    username: root
+    password: 997103
+    url: jdbc:mysql:///lov?useSSL=false
+    driver-class-name: com.mysql.jdbc.Driver
+#    schema: 
+#      - classpath:department.sql
+#      - classpath:employee.sql
+#    initialization-mode: always
+    type: com.alibaba.druid.pool.DruidDataSource
+    initialSize: 5
